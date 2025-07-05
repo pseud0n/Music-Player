@@ -65,6 +65,7 @@ else:
   print("Running as python file")
   FILE_PATH = os.path.dirname(os.path.realpath(__file__)) # Location of this file
 
+"""
 NAMES_COMMANDS = (
   ("pyglet","python -m pip install pyglet==1.2.4"), # Note that '-m' means module
 #   ("pyglet_ffmpeg", "python -m pip install pyglet-ffmpeg"),
@@ -72,6 +73,7 @@ NAMES_COMMANDS = (
   ("mutagen.mp3", "python -m pip install mutagen"), # Find length of .mp3 if metadata not available/erroneous/wrong format
   ("eyed3", "python -m pip install python-magic-bin==0.4.14 & python -m pip install eyed3"), # libmagic needed for eyed3, for .wav
 )
+"""
 
 PY_PATH = os.path.dirname(sys.executable) # Any library will do
 PATHS = os.environ["PATH"].split(";") # PATH is separated by semicolons - produces a list containing each path
@@ -108,7 +110,7 @@ MODES = ("Select", "Order", "Edit") # Names of modes (note that these can be cha
 HL_BG = "#4c4c4c" # Colour for when highlighted
 BG = "#212121" # Colour of background
 FG = "#afafaf" # Colour of foreground (text)
-CHARS = "4;ra" # Pause, play, cross, tick in Webdings font (these characters would have to be emojis otherwise)
+CHARS = "\u25B6\u23F8\u274C\u2714" # Pause, play, cross, tick
 LEN = 600 # Length of the turtle at the bottom of the window
 INSPIRATION = ("You can do it if you B&Q (TM)(C) it",
   "Gold (gold), always believe in your soul, you've got the power to know, that you need to play this track",
@@ -210,10 +212,10 @@ class App(tk.Tk): # Inherits from tk.Tk so that self is also the window
     ttk_style.theme_use("default") # Default for your OS (tkinter works for Windows, Mac and Linux)
     ttk_style.configure("TProgressbar", thickness = 5, background = "#f40000") # Customise how thick the progress bar is
 
-    effects = json.loads(open(FILE_PATH + r"\Config\Effects.json", "r").read()) # r"" means string where there are no escape sequences
+    effects = json.loads(open(FILE_PATH + "/Config/Effects.json", "r").read()) # r"" means string where there are no escape sequences
     # Loads this file into a dictionary equivalent
 
-    os.chdir(FILE_PATH + r"\Tracks") # Set CWD to 'Tracks'
+    os.chdir(FILE_PATH + "/Tracks") # Set CWD to 'Tracks'
     track_list = os.listdir() # List of all files in the folder 'Tracks'
 
     for file in track_list: # Iterate through each track currently loaded
@@ -231,7 +233,7 @@ class App(tk.Tk): # Inherits from tk.Tk so that self is also the window
     self.tracks = [Track(track_list[i], 0.5 + audio_length(track_list[i]), i, *effects[track_list[i]]) for i in range(len(track_list))]
     # Create new Track object for each track name with the corrrct name, length and effects
     # Note that the 0.5 second buffer is to account for cutting tracks slightly short (a problem with the library?)
-    with open(FILE_PATH + r"\Config\Order.txt") as file: # with statement automatically closes the file when it ends
+    with open(FILE_PATH + "/Config/Order.txt") as file: # with statement automatically closes the file when it ends
       order = tuple(map(int, file.readlines())) # Convert each string into an integer
       order = [el for el in order if el < len(self.tracks)] # Remove all numbers that exceed the number of tracks, so as not to cause an IndexError
       if order == []: # If empty/deleted (by the user or by a crash), create a new order
@@ -404,7 +406,7 @@ class App(tk.Tk): # Inherits from tk.Tk so that self is also the window
       return # Stop anything else from happening below
     # Save order
     order = [track.num for track in self.tracks]
-    os.chdir(FILE_PATH + r"\Config") # Navigate to 'Config' in the directory of this file
+    os.chdir(FILE_PATH + "/Config") # Navigate to 'Config' in the directory of this file
     with open("Order.txt", "w") as file: # Automatically closes after dedentation
       for n in order:
         file.write(str(n) + "\n") # Easier to read if each one is a newline and allows for numbers with > 1 digits
@@ -562,7 +564,7 @@ class App(tk.Tk): # Inherits from tk.Tk so that self is also the window
     # del self.player # Remove it from memory
     # self.player = pyglet.media.Player() # Reset it to a new player object
     # pygame.mixer.music.stop()
-    os.chdir(FILE_PATH + r"\Tracks") # Go to 'Tracks' folder in current working directory
+    os.chdir(FILE_PATH + r"/Tracks") # Go to 'Tracks' folder in current working directory
     print("media player", track_obj, type(track_obj), track_obj.__dict__)
     pygame.mixer.music.load(track_obj.name)
     self.offset = track_obj.trim[0] #  So it starts from where it should (not where previous track was)
@@ -701,7 +703,7 @@ class PlayThread(threading.Thread):
   
   def play(self):
     # return
-    print("PLAYING")
+    print("PLAYING", self.track)
     # self.parent.player.play()
     track_frame_obj = self.parent.track_frames[self.parent.chosen_selection[0]]
     self.track = track_frame_obj.track
@@ -713,7 +715,7 @@ class PlayThread(threading.Thread):
     fade_out_from = self.track.length - self.track.trim[1] - self.track.fade[1] # Start the fading out
     fade_in_until = self.track.trim[0] + self.track.fade[0]
     # pygame.mixer.music.load(self.track.name)
-    condition = lambda:(pygame.mixer.music.get_pos() / 1000) < (self.track.length - self.track.trim[1])
+    condition = lambda:(pygame.mixer.music.get_pos() / 1000) < (length- self.track.trim[1])
     if not condition():
 #       print("Progress = {}".format(track_frame_obj.track.trim[0]))
       self.parent.progress_dvar.set(track_frame_obj.track.trim[0])
@@ -765,7 +767,7 @@ class PlayThread(threading.Thread):
       # print("parent time =", self.parent.progress_dvar.get())
 #       if self.parent.player.time < self.parent.progress_dvar.get() and self.parent.progress_dvar.get() > 1:
       if self.parent.progress_dvar.get() >= self.track.length - self.track.trim[1]:
-        print("Reached end trim", self.parent.progress_dvar.get(), self.track.length, self.track.trim[1], self.track.length - self.track.trim[1])
+        print("Reached end trim", self.parent.progress_dvar.get(), self.track.length, self.track.trim[1], self.track.length - self.track.trim[1], length, self.track)
         break
         # print("time2 =", pygame.mixer.music.get_pos())
         # self.parent.progress_dvar.set(time)
@@ -774,9 +776,11 @@ class PlayThread(threading.Thread):
       # print("t3 =", pygame.mixer.music.get_pos())
     # Run code below if ended by getting to the end
     # print("Finished Normally")
-    self.parent.offset = length
+    #self.parent.offset = length
+    self.parent.offset = 0
     pygame.mixer.music.stop()
-    self.parent.progress_dvar.set(length - trim[1]) # length of track - end trim: what time it should finish at
+    self.parent.progress_dvar.set(trim[0])
+    #self.parent.progress_dvar.set(length - trim[1]) # length of track - end trim: what time it should finish at
     
     # self.parent.media_player(self.parent.tracks[self.parent.selection[0]])
     if self.track.loop:
